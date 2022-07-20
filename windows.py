@@ -12,10 +12,11 @@ class Front:
         self.buttons = []
 
         # Entry
-        self.entry = TextInputBox(450, 300, 40, pygame.font.SysFont("Consolas", 19))
+        self.entry = TextInputBox(100, 400, 450, pygame.font.SysFont("Consolas", 19))
 
         # Buttons
-        self.validate_btn = Button(BLACK, BLACK, 10, 10, 50, 50, lambda: fct(self.entry.text), 'V')
+        self.validate_btn = Button(BLACK, BLACK, 600, 400, 50, 50, lambda: fct(self.entry.text), 'dl')
+        self.ask_correction = Button(BLACK, BLACK, 600, 400, 50, 50, lambda: fct(self.entry.text), 'dl')
 
         # Group
         self.group = pygame.sprite.Group(self.entry)
@@ -54,3 +55,15 @@ class Front:
         self.group.draw(self.win)
         for btn in self.buttons:
             btn.draw(self.win)
+
+
+def prompt_file():
+    """Create a Tk file dialog and cleanup when finished"""
+    import tkinter
+    import tkinter.filedialog
+
+    top = tkinter.Tk()
+    top.withdraw()  # hide window
+    file_name = tkinter.filedialog.askopenfilename(parent=top)
+    top.destroy()
+    return file_name

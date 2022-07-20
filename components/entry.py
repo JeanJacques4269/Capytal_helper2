@@ -22,7 +22,7 @@ class TextInputBox(pygame.sprite.Sprite):
             self.image.fill(self.backcolor)
         self.image.blit(t_surf, (5, 5))
         pygame.draw.rect(self.image, self.color, self.image.get_rect().inflate(-2, -2), 2)
-        self.rect = self.image.get_rect(center=self.pos)
+        self.rect = self.image.get_rect(topleft=self.pos)
 
     def update(self, event_list):
         for event in event_list:
