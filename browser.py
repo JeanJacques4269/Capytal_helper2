@@ -18,7 +18,7 @@ profile.set_preference("browser.download.dir", rf"{os.getcwd()}\copies")
 
 options = Options()
 
-options.headless = True
+options.headless = False
 driver = webdriver.Firefox(firefox_profile=profile, options=options, executable_path=path_driver)
 
 
@@ -32,17 +32,10 @@ def auth(identifiant, password):
     print("Authentifiaction succes")
     driver.get("https://capytale2.ac-paris.fr/web/c-auth/pvd/mln/connect")
     time.sleep(2)
-    # element = driver.find_element(By.CSS_SELECTOR, ".apps")
-    # actions = ActionChains(driver)
-    # actions.move_to_element(element).perform()
-    # driver.find_element(By.CSS_SELECTOR, ".apps").click()
-    # time.sleep(3)
-    # driver.find_element(By.CSS_SELECTOR, "#capytale2-paris img").click()
-    #
-    # time.sleep(4)
 
 
 def dl_every_student_file(assignement_link, n):
+    name_weird = ""
     driver.get(assignement_link)
     time.sleep(2)
     for i in range(n):
@@ -51,21 +44,35 @@ def dl_every_student_file(assignement_link, n):
                 driver.find_element(By.CSS_SELECTOR, f".odd:nth-child({i + 1}) a").click()
             else:
                 driver.find_element(By.CSS_SELECTOR, f".even:nth-child({i + 1}) a").click()
-        except:
-            print("stop")
+        except Exception as e:
+            print(f"stop, {e}")
             break
-        time.sleep(5)
 
-        student_name = driver.find_element(By.ID, "capytale-student-info").text
-        student_name = inverse(student_name[:-7])
-        driver.find_element(By.ID, "download").click()
+        time.sleep(2)
+
+        done = False
+        student_name = "None"
+        while not done:
+            time.sleep(1)
+            try:
+                done = True
+                driver.find_element(By.ID, "download").click()
+                student_name = driver.find_element(By.ID, "capytale-student-info").text
+                student_name = inverse(student_name[:-7])
+            except:
+                done = False
+
+        time.sleep(0.5)
         print(f"Downloaded {student_name}'s file")
-        time.sleep(0.3)
-        list_of_files = glob.glob('copies/*.py')
-        latest_file = max(list_of_files, key=os.path.getctime)
-        os.rename(latest_file, fr"copies\{student_name}.py")
+
+        if name_weird == "":
+            list_of_files = glob.glob('copies/*.py')
+            latest_file = max(list_of_files, key=os.path.getctime)
+            name_weird = latest_file
+
+        os.rename(name_weird, fr"copies\{student_name}.py")
         driver.find_element(By.XPATH, "//a/button/i").click()
-        time.sleep(1)
+        time.sleep(2)
     print("Download success ")
     driver.quit()
 

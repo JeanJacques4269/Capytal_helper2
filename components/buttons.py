@@ -9,14 +9,14 @@ TEXTCOLORONHOVER = GRAY
 
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self, x, y, w, text, back_color, text_color, onclick):
+    def __init__(self, x, y, w, text, back_color, text_color, font, outline, onclick):
         super().__init__()
         self.x = x
         self.y = y
         self.pos = (x, y)
         self.width = w
         self.text = text
-        self.font = pygame.font.SysFont('comicsans', 45)
+        self.font = font
 
         self.back_color_default = back_color
         self.back_color = back_color
@@ -25,6 +25,8 @@ class Button(pygame.sprite.Sprite):
         self.textcolor = text_color
 
         self.onclick = onclick
+
+        self.outline = outline
         self.draw()
 
     def draw(self):
@@ -33,7 +35,9 @@ class Button(pygame.sprite.Sprite):
                                     pygame.SRCALPHA)
         self.image.fill(self.back_color)
         self.image.blit(t_surf, (5, 5))
-        pygame.draw.rect(self.image, BLACK, self.image.get_rect().inflate(-2, -2), 2)
+
+        if self.outline:
+            pygame.draw.rect(self.image, BLACK, self.image.get_rect().inflate(-2, -2), 2)
         self.rect = self.image.get_rect(topleft=self.pos)
 
     def update(self, events):

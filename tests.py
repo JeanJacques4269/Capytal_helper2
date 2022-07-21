@@ -32,11 +32,6 @@ def tests(copies_dir, correction_dir, inputs_test):
     # create_excel(all_data_for_excel, fonctions_str_everyone_should_have)
 
 
-name = os.path.basename('D:/Programmation/Python/Projets de ouf/Capytal_helper2/correction.py')
-correction_mod = SourceFileLoader(name,
-                                  'D:/Programmation/Python/Projets de ouf/Capytal_helper2/correction.py').load_module()
-
-
 def compute_tests_correction(correction, inputs_test, debug=True) -> dict:
     if debug:
         print("Starting tests computation")

@@ -1,6 +1,6 @@
 import pygame
 from constants import *
-from components.entry import TextInputBox
+from components.entry import TextInputBox, Label
 from components.buttons import Button, ButtonImg
 from browser import fct
 from tests import tests
@@ -14,16 +14,21 @@ class Front:
 
         self.correction_dir = ""
 
+        basicfont = pygame.font.SysFont('comicsans', 15)
+        # Label
+        self.correction = Label("Fichier correction : ", 100, 200, pygame.font.SysFont("Consolas", 15), BLACK)
+
         # Entry
         self.entry = TextInputBox(100, 300, 450, pygame.font.SysFont("Consolas", 15))
 
         # Buttons
-        self.get_correction_btn = Button(400, 200, 50, "Get correction", BLACK, WHITE, self.get_correction_dir)
+        self.get_correction_btn = Button(400, 200, 50, "Parcourir", GRAY, BLACK, basicfont, False,
+                                         self.get_correction_dir)
         self.dl_copies_btn = ButtonImg(dl_img, 576, 313, lambda: fct(self.entry.text))
         self.validate_btn = ButtonImg(v_img, CENTER_W, 400, self.get_correction_dir)
 
         # Group
-        self.group = pygame.sprite.Group(self.entry)
+        self.group = pygame.sprite.Group(self.entry, self.correction)
         self.btns_group = pygame.sprite.Group(self.dl_copies_btn, self.validate_btn, self.get_correction_btn)
 
     def run(self):
