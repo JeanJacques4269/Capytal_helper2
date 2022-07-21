@@ -18,7 +18,7 @@ profile.set_preference("browser.download.dir", rf"{os.getcwd()}\copies")
 
 options = Options()
 
-options.headless = False
+options.headless = True
 driver = webdriver.Firefox(firefox_profile=profile, options=options, executable_path=path_driver)
 
 

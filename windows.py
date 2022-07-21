@@ -16,7 +16,8 @@ class Front:
 
         basicfont = pygame.font.SysFont('comicsans', 15)
         # Label
-        self.correction_lbl = Label("Fichier correction : ", 100, 200, pygame.font.SysFont("Consolas", 15), BLACK)
+        self.correction_lbl = Label(f"Fichier correction : {self.correction_dir}", 100, 200,
+                                    pygame.font.SysFont("Consolas", 15), BLACK)
 
         # Entry
         self.entry = TextInputBox(100, 300, 450, pygame.font.SysFont("Consolas", 15))
@@ -25,7 +26,7 @@ class Front:
         self.get_correction_btn = Button(400, 200, 50, "Parcourir", GRAY, BLACK, basicfont, False,
                                          self.get_correction_dir)
         self.dl_copies_btn = ButtonImg(dl_img, 576, 313, lambda: fct(self.entry.text))
-        self.validate_btn = ButtonImg(v_img, CENTER_W, 400, self.get_correction_dir)
+        self.validate_btn = ButtonImg(v_img, CENTER_W, 400, self.validate)
 
         # Group
         self.group = pygame.sprite.Group(self.entry, self.correction_lbl)
@@ -48,6 +49,7 @@ class Front:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 print(event.pos)
 
+        self.correction_lbl.upd(self.correction_dir)
         self.btns_group.update(eves)
         self.group.update(eves)
 
