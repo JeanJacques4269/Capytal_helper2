@@ -16,7 +16,7 @@ class Front:
 
         basicfont = pygame.font.SysFont('comicsans', 15)
         # Label
-        self.correction = Label("Fichier correction : ", 100, 200, pygame.font.SysFont("Consolas", 15), BLACK)
+        self.correction_lbl = Label("Fichier correction : ", 100, 200, pygame.font.SysFont("Consolas", 15), BLACK)
 
         # Entry
         self.entry = TextInputBox(100, 300, 450, pygame.font.SysFont("Consolas", 15))
@@ -28,7 +28,7 @@ class Front:
         self.validate_btn = ButtonImg(v_img, CENTER_W, 400, self.get_correction_dir)
 
         # Group
-        self.group = pygame.sprite.Group(self.entry, self.correction)
+        self.group = pygame.sprite.Group(self.entry, self.correction_lbl)
         self.btns_group = pygame.sprite.Group(self.dl_copies_btn, self.validate_btn, self.get_correction_btn)
 
     def run(self):
