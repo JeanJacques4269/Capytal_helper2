@@ -62,3 +62,6 @@ class Label(pygame.sprite.Sprite):
             self.image = pygame.Surface((t_surf.get_width() + 10, t_surf.get_height() + 10), pygame.SRCALPHA)
             self.rect = self.image.get_rect(topleft=self.pos)
             self.image.blit(t_surf, (5, 5))
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)

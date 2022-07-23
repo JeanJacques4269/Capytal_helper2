@@ -85,9 +85,5 @@ def inverse(pre_nom):
 
 
 def fct(assignmentlink):
-    pattern = re.compile(r"^https:\/\/capytale2.ac-paris.fr\/web\/assignments\/.+$")
-    if not pattern.match(assignmentlink):
-        return
-
     auth("magali.andry-chevalerias", "Ecedouced#42t", )
     dl_every_student_file(assignmentlink, 100)

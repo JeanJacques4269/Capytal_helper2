@@ -17,3 +17,6 @@ v_img = pygame.transform.scale(v_img, (50, 50))
 
 dl_img = pygame.image.load("assets/dl.png")
 dl_img = pygame.transform.smoothscale(dl_img, (37, 37))
+
+cross_img = pygame.image.load("assets/red_cross.png")
+cross_img = pygame.transform.smoothscale(cross_img, (37, 37))

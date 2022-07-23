@@ -81,3 +81,6 @@ class ButtonImg(pygame.sprite.Sprite):
 
     def isMouseOn(self, pos):
         return self.rect.collidepoint(*pos)
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)

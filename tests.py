@@ -2,12 +2,30 @@ import glob
 import os
 from importlib.machinery import SourceFileLoader
 from inspect import getmembers, isfunction
+import signal
 
 import xlsxwriter
 
 debug = False
 
 i_test = [["a", "b", "c"], []]
+
+
+class Timeout:
+
+    def __init__(self, seconds=1, error_message='TimeoutError'):
+        self.seconds = seconds
+        self.error_message = error_message
+
+    def handle_timeout(self, signum, frame):
+        raise TimeoutError(self.error_message)
+
+    def __enter__(self):
+        signal.signal(signal.SIGALRM, self.handle_timeout)
+        signal.alarm(self.seconds)
+
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
 
 
 def tests(copies_dir, correction_dir, inputs_test):
@@ -25,7 +43,7 @@ def tests(copies_dir, correction_dir, inputs_test):
         print(f"{tests_data=}")
 
     # Starting correcting students
-    all_data_for_excel = correct_copies(copies_dir, fonctions_str_everyone_should_have, tests_data, debug=True)
+    all_data_for_excel = test_students_fucntions(copies_dir, fonctions_str_everyone_should_have, tests_data, debug=True)
     print("**  TESTS EXECUTED SUCCESSFULLY  **")
 
     print("Starting excel doc creation")
@@ -57,7 +75,7 @@ def compute_tests_correction(correction, inputs_test, debug=True) -> dict:
     return tests_data
 
 
-def correct_copies(copies_dir, fonction_str, tests_data, debug=False) -> dict:
+def test_students_fucntions(copies_dir, fonction_str, tests_data, debug=False) -> dict:
     all_data_for_excel = dict()
 
     for file in glob.glob(fr"{copies_dir}\*.py"):
@@ -84,15 +102,20 @@ def correct_copies(copies_dir, fonction_str, tests_data, debug=False) -> dict:
                 if debug:
                     print(f"{f'testing with {arg}':<24}", end="")
                 error = False
-                try:
-                    if isinstance(arg, tuple):
-                        got = student_fonction(*arg)
-                    else:
-                        got = student_fonction(arg)
 
-                except Exception:
-                    error = True
-                    got = None
+                with Timeout(seconds=3, error_message='Job took too much time'):
+                    try:
+                        if isinstance(arg, tuple):
+                            got = student_fonction(*arg)
+                        else:
+                            got = student_fonction(arg)
+                    except TimeoutError as e:
+                        print(e)
+                        error = True
+                        got = None
+                    except Exception:
+                        error = True
+                        got = None
                 if error:
                     if debug:
                         print(f"Error")
