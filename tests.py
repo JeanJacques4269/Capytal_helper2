@@ -1,34 +1,19 @@
 import glob
+import multiprocessing
 import os
+import sys
+import time
 from importlib.machinery import SourceFileLoader
 from inspect import getmembers, isfunction
 import signal
 
 import xlsxwriter
+import subprocess
 
 debug = False
 
-i_test = [["a", "b", "c"], []]
 
-
-class Timeout:
-
-    def __init__(self, seconds=1, error_message='TimeoutError'):
-        self.seconds = seconds
-        self.error_message = error_message
-
-    def handle_timeout(self, signum, frame):
-        raise TimeoutError(self.error_message)
-
-    def __enter__(self):
-        signal.signal(signal.SIGALRM, self.handle_timeout)
-        signal.alarm(self.seconds)
-
-    def __exit__(self, type, value, traceback):
-        signal.alarm(0)
-
-
-def tests(copies_dir, correction_dir, inputs_test):
+def tests(copies_dir, correction_dir):
     print(f"**  STARTING TESTS  **")
 
     name = os.path.basename(correction_dir)
@@ -36,23 +21,29 @@ def tests(copies_dir, correction_dir, inputs_test):
     fonctions = getmembers(correction, isfunction)
     fonctions_str_everyone_should_have = [e[0] for e in fonctions]
 
+    args_for_tests = None
+    try:
+        args_for_tests = correction.tests_prof
+    except AttributeError:
+        print("!!! Missing 'tests_prof' in correction file !!!")
+
     # Getting all data required from the correction in order to correct fast
 
-    tests_data = compute_tests_correction(correction, inputs_test)
+    tests_data = compute_tests_correction(correction, args_for_tests)
     if debug:
         print(f"{tests_data=}")
 
     # Starting correcting students
-    all_data_for_excel = test_students_fucntions(copies_dir, fonctions_str_everyone_should_have, tests_data, debug=True)
+    all_data_for_excel = test_students_functions(copies_dir, fonctions_str_everyone_should_have, tests_data, debug=True)
     print("**  TESTS EXECUTED SUCCESSFULLY  **")
 
     print("Starting excel doc creation")
-    # create_excel(all_data_for_excel, fonctions_str_everyone_should_have)
+    return all_data_for_excel, fonctions_str_everyone_should_have
 
 
-def compute_tests_correction(correction, inputs_test, debug=True) -> dict:
+def compute_tests_correction(correction, args_for_tests, debug=False) -> dict:
     if debug:
-        print("Starting tests computation")
+        print("Creating correction data")
     fonctions = getmembers(correction, isfunction)
     fonctions_reelle = [e[1] for e in fonctions]
     fonctions_str = [e[0] for e in fonctions]
@@ -63,11 +54,14 @@ def compute_tests_correction(correction, inputs_test, debug=True) -> dict:
     for j, fonction in enumerate(fonctions_reelle):
         if debug:
             print(f"Creating data for fonction : {fonction}")
-        test_values = inputs_test[j]
+        test_values = args_for_tests[fonctions_str[j]]
         answers = []
         if test_values:
-            for i in test_values:
-                answers.append(fonction(i))
+            for args in test_values:
+                if isinstance(args, tuple):
+                    answers.append(fonction(*args))
+                else:
+                    answers.append(fonction(args))
             one_fonction_test_data = [test_values, answers]
         else:
             one_fonction_test_data = [[], [fonction()]]
@@ -75,74 +69,91 @@ def compute_tests_correction(correction, inputs_test, debug=True) -> dict:
     return tests_data
 
 
-def test_students_fucntions(copies_dir, fonction_str, tests_data, debug=False) -> dict:
+def test_students_functions(copies_dir, fonctions_str, tests_data, debug=False) -> dict:
     all_data_for_excel = dict()
 
     for file in glob.glob(fr"{copies_dir}\*.py"):
-        name = os.path.basename(file)
-        student_file = SourceFileLoader(name, file).load_module()
+        name_f = os.path.basename(file)
+        name = name_f[:-3]
         if debug:
-            print(f"Loaded {name}")
-        all_data_for_excel[name] = list()
-        for fonction in fonction_str:
-            arg_expected_out = tests_data[fonction]
+            print(f"Correcting {name_f}")
+        all_data_for_excel[name_f[:-3]] = list()
+
+        try:
+            # student_file = SourceFileLoader(name_f, file).load_module()
+            pass
+        except Exception as e:
+            print("Exceptionnally trash student, skipped.")
+            continue
+
+        for fonction_str in fonctions_str:
+            arg_expected_out = tests_data[fonction_str]
             if debug:
-                print(f"\nTesting {fonction} with {arg_expected_out}")
+                print(f"Testing {fonction_str}")
 
             nb_wrong = 0
             nb_error = 0
 
             try:
-                student_fonction = getattr(student_file, fonction)
+                # student_fonction = getattr(student_file, fonction_str)
+                pass
             except AttributeError:  # la fonction n'est pas définie dans le fichier de l'élève
-                all_data_for_excel[name].append("na")
+                all_data_for_excel[name].append("Missing fonction")
                 continue
 
             for i, arg in enumerate(arg_expected_out[0]):
                 if debug:
-                    print(f"{f'testing with {arg}':<24}", end="")
+                    a = "[Truncated]"
+                    print(f"{f'Test {i} : {arg if len(str(arg)) < 15 else a}':<24}", end="")
                 error = False
+                timeout = False
+                got = None
+                try:
+                    basebasename = "copies." + name_f.replace(".py", "")
+                    if isinstance(arg, tuple):
+                        arg_list = [str(e) for e in arg]
+                        real_arg = ",".join(arg_list)
+                    else:
+                        real_arg = arg
+                    magic_s = f'python -c "from {basebasename} import {fonction_str};import sys; print({fonction_str}({real_arg}))"'
+                    r = subprocess.run(magic_s, timeout=1, capture_output=True, )
+                    got = str(r.stdout.rstrip())[2:-1]
 
-                with Timeout(seconds=3, error_message='Job took too much time'):
-                    try:
-                        if isinstance(arg, tuple):
-                            got = student_fonction(*arg)
-                        else:
-                            got = student_fonction(arg)
-                    except TimeoutError as e:
-                        print(e)
-                        error = True
-                        got = None
-                    except Exception:
-                        error = True
-                        got = None
-                if error:
+                except subprocess.TimeoutExpired as e:
+                    timeout = True
+                    print("Timeout", end=" | ")
+                except Exception as e:
+                    print(e)
+                    error = True
+
+                if error or timeout:
                     if debug:
                         print(f"Error")
                     nb_error += 1
                 else:
-                    if got == arg_expected_out[1][i]:
+                    if got == str(arg_expected_out[1][i]):
                         if debug:
-                            print("Passed")
+                            print("OK")
                     else:
-                        # print("Wrong")
                         if debug:
-                            print(f"expected {arg_expected_out[1][i]}, got {got}")
+                            print("WRONG RESULT")
+                            # print(f"expected {arg_expected_out[1][i]}, got {got}")
                         nb_wrong += 1
+            if debug:
+                print()
             score = 100 - (nb_wrong + nb_error) / len(arg_expected_out[1]) * 100
             cute_score = int(f'{score:.0f}')
             all_data_for_excel[name].append(cute_score)
-            if debug:
-                print(f"Finished testing, score = {cute_score}%")
+
         if debug:
-            print("\n\n__________________________________________________________________________________________\n\n")
+            print("____________________________________________________________________")
     return all_data_for_excel
 
 
-def create_excel(data, fonctions_str) -> None:
+def create_excel(data, fonctions_str, output_path) -> None:
     names = data.keys()
 
-    workbook = xlsxwriter.Workbook('output.xlsx')
+    workbook = xlsxwriter.Workbook(output_path)
     worksheet = workbook.add_worksheet('Output')
 
     row, column = 0, 1

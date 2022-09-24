@@ -1,13 +1,15 @@
 import os
 import re
+import time
 
 import pygame
 from constants import *
 from components.entry import TextInputBox, Label
 from components.buttons import Button, ButtonImg
 from browser import fct
-from tests import tests
+from tests import tests, create_excel
 import multiprocessing
+import subprocess
 
 
 class Front:
@@ -21,7 +23,7 @@ class Front:
         basicfont = pygame.font.SysFont('comicsans', 30)
         # Label
         self.correction_lbl = Label(f"Fichier correction : {self.correction_dir}", 100, 100, basicfont, BLACK)
-        self.entry_lbl = Label(f"Activity link", 100, 250, pygame.font.SysFont("Consolas", 25), BLACK)
+        self.entry_lbl = Label(f"Lien de l'activité", 100, 250, pygame.font.SysFont("Consolas", 25), BLACK)
         self.downloading_lbl = Label("Downloading...", 630, 300, pygame.font.SysFont("Consolas", 15), BLACK)
 
         # Entry
@@ -36,7 +38,7 @@ class Front:
 
         # Group
         self.group = pygame.sprite.Group(self.entry, self.correction_lbl, self.entry_lbl)
-        self.btns_group = pygame.sprite.Group(self.dl_copies_btn, self.parcourir_btn, self.cross_btn)
+        self.btns_group = pygame.sprite.Group(self.dl_copies_btn, self.parcourir_btn)
 
         # process
         self.procs = []
@@ -58,14 +60,17 @@ class Front:
                     proc.kill()
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                print(event.pos)
-
+                pass
         self.correction_lbl.upd(self.correction_dir)
         self.btns_group.update(eves)
         onlyfiles = next(os.walk("copies"))[2]
         if self.correction_dir != "" and len(onlyfiles) >= 1:
             self.validate_btn.update(eves)
         self.group.update(eves)
+        for proc in self.procs:
+            proc.join(timeout=0)
+            if proc.is_alive():
+                self.cross_btn.update(eves)
 
     def draw(self):
         self.group.draw(self.win)
@@ -79,20 +84,26 @@ class Front:
             proc.join(timeout=0)
             if proc.is_alive():
                 self.downloading_lbl.draw(self.win)
+                self.cross_btn.draw(self.win)
 
     def get_correction_dir(self):
         self.correction_dir = prompt_file()
 
     def validate(self):
-        tests("copies", self.correction_dir, [["a", "b", "c"], []])
+        i, j = tests("copies", self.correction_dir)
+        create_excel(i, j, "output.xlsx")
+        time.sleep(2)
+        subprocess.Popen(r'explorer /select,"output.xlsx"')
 
     def download_copies(self):
         pattern = re.compile(r"^https://capytale2.ac-paris.fr/web/assignments/.+$")
         if not pattern.match(self.entry.text):
+            print("La chaine entrée ne correspond pas à une activité capitale.")
             return
         dl_copies_process = multiprocessing.Process(target=fct, args=(self.entry.text,))
-        self.procs[0] = dl_copies_process
-        dl_copies_process.start()
+        if not self.procs:
+            self.procs.append(dl_copies_process)
+            self.procs[0].start()
 
     def cancel_dl(self):
         for proc in self.procs:

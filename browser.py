@@ -1,3 +1,4 @@
+import shutil
 import os
 import time
 import glob
@@ -12,13 +13,19 @@ profile = webdriver.FirefoxProfile()
 profile.set_preference("browser.download.folderList", 2)
 profile.set_preference("browser.download.manager.showWhenStarting", False)
 profile.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/plain")
-if not os.path.exists("copies"):
-    os.mkdir("copies")
+
+path = 'copies'
+if os.path.exists(path):
+    pass
+else:
+    os.mkdir(path)
+
 profile.set_preference("browser.download.dir", rf"{os.getcwd()}\copies")
 
 options = Options()
 
 options.headless = True
+
 driver = webdriver.Firefox(firefox_profile=profile, options=options, executable_path=path_driver)
 
 
@@ -35,45 +42,59 @@ def auth(identifiant, password):
 
 
 def dl_every_student_file(assignement_link, n):
-    name_weird = ""
     driver.get(assignement_link)
     time.sleep(2)
-    for i in range(n):
+    chosen_file_path = ""
+    for i in range(2, n):
         try:
-            if i % 2 == 0:
-                driver.find_element(By.CSS_SELECTOR, f".odd:nth-child({i + 1}) a").click()
-            else:
-                driver.find_element(By.CSS_SELECTOR, f".even:nth-child({i + 1}) a").click()
+
+            element = driver.find_element(By.XPATH, f"//tr[{i}]/td[4]/a")
+            driver.execute_script("arguments[0].scrollIntoView();", element)
+            time.sleep(1)
+            element.click()
+
         except Exception as e:
-            print(f"stop, {e}")
-            break
+            print(e)
+            continue
 
         time.sleep(2)
-
+        bitch = False
         done = False
         student_name = "None"
         while not done:
-            time.sleep(1)
             try:
-                done = True
-                driver.find_element(By.ID, "download").click()
+                time.sleep(0.2)
                 student_name = driver.find_element(By.ID, "capytale-student-info").text
+                if len(student_name) < 3:
+                    continue
+                done = True
+
                 student_name = inverse(student_name[:-7])
+                student_name = student_name.replace(" ", "_")
+
+                if rf"copies\{student_name}.py" in glob.glob("copies/*.py"):
+                    print(f"Skipping {student_name}")
+                    bitch = True
+
+                else:
+                    driver.find_element(By.ID, "download").click()
             except:
                 done = False
+        if bitch:
+            driver.find_element(By.XPATH, "//a/button/i").click()
+            time.sleep(2)
 
         time.sleep(0.5)
         print(f"Downloaded {student_name}'s file")
-
-        if name_weird == "":
+        if chosen_file_path == "":
             list_of_files = glob.glob('copies/*.py')
             latest_file = max(list_of_files, key=os.path.getctime)
-            name_weird = latest_file
+            chosen_file_path = latest_file
 
-        os.rename(name_weird, fr"copies\{student_name}.py")
+        os.rename(chosen_file_path, fr"copies\{student_name}.py")
         driver.find_element(By.XPATH, "//a/button/i").click()
         time.sleep(2)
-    print("Download success ")
+    print("Successfully downloaded every file.")
     driver.quit()
 
 
@@ -85,5 +106,5 @@ def inverse(pre_nom):
 
 
 def fct(assignmentlink):
-    auth("magali.andry-chevalerias", "Ecedouced#42t", )
+    auth("", "")  # MODIFY HERE : username, password
     dl_every_student_file(assignmentlink, 100)
