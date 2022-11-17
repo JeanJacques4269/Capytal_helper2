@@ -24,7 +24,7 @@ profile.set_preference("browser.download.dir", rf"{os.getcwd()}\copies")
 
 options = Options()
 
-options.headless = True
+options.headless = False
 
 driver = webdriver.Firefox(firefox_profile=profile, options=options, executable_path=path_driver)
 
@@ -80,12 +80,14 @@ def dl_every_student_file(assignement_link, n):
                     driver.find_element(By.ID, "download").click()
             except:
                 done = False
+
+        time.sleep(0.5)
         if bitch:
             driver.find_element(By.XPATH, "//a/button/i").click()
             time.sleep(2)
-
-        time.sleep(0.5)
-        print(f"Downloaded {student_name}'s file")
+            continue
+        else:
+            print(f"Downloaded {student_name}'s file")
         if chosen_file_path == "":
             list_of_files = glob.glob('copies/*.py')
             latest_file = max(list_of_files, key=os.path.getctime)
@@ -106,5 +108,5 @@ def inverse(pre_nom):
 
 
 def fct(assignmentlink):
-    auth("", "")  # MODIFY HERE : username, password
+    auth("magali.andry-chevalerias", "Ecedouced#42t")  # MODIFY HERE : username, password
     dl_every_student_file(assignmentlink, 100)

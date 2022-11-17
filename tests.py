@@ -10,7 +10,10 @@ import signal
 import xlsxwriter
 import subprocess
 
-debug = False
+debug = True
+
+scrabble = {"A": 1, "B": 3, "C": 3, "D": 2, "E": 1, "F": 4, "G": 2, "H": 4, "I": 1, "J": 8, "K": 10, "L": 1, "M": 2,
+            "N": 1, "O": 1, "P": 3, "Q": 8, "R": 1, "S": 1, "T": 1, "U": 1, "V": 4, "W": 10, "X": 10, "Y": 10, "Z": 10}
 
 
 def tests(copies_dir, correction_dir):
@@ -115,8 +118,12 @@ def test_students_functions(copies_dir, fonctions_str, tests_data, debug=False) 
                         real_arg = ",".join(arg_list)
                     else:
                         real_arg = arg
-                    magic_s = f'python -c "from {basebasename} import {fonction_str};import sys; print({fonction_str}({real_arg}))"'
+                    if type(arg) == str:
+                        real_arg = f"'{real_arg}'"
+                    magic_s = f'python -c "from {basebasename} import {fonction_str};import sys; print({fonction_str}' \
+                              f'({real_arg}))"'
                     r = subprocess.run(magic_s, timeout=1, capture_output=True, )
+                    print(r)
                     got = str(r.stdout.rstrip())[2:-1]
 
                 except subprocess.TimeoutExpired as e:
